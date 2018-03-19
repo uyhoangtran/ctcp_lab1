@@ -16,6 +16,11 @@
 #include "ctcp_sys.h"
 #include "ctcp_utils.h"
 
+#define MAX_BUFF_SIZE MAX_SEG_DATA_SIZE
+#define SEGMENT_HDR_SIZE sizeof(ctcp_segment_t)
+
+char buffer[MAX_BUFF_SIZE];
+
 /**
  * Connection state.
  *
@@ -39,8 +44,10 @@ struct ctcp_state {
                                this if this is the case for you */
 
   /* FIXME: Add other needed fields. */
-  uint32_t seqno;        /* Sequence number (in bytes) */
-  uint32_t ackno;        /* Acknowledgment number (in bytes) */
+  ctcp_config_t *cfg;
+  uint32_t seqno;              /* Current sequence number */
+  uint32_t next_seqno;         /* Sequence number of next segment to send */
+  uint32_t ackno;              /* Current ack number */
 };
 
 /**
@@ -51,8 +58,40 @@ static ctcp_state_t *state_list;
 
 /* FIXME: Feel free to add as many helper functions as needed. Don't repeat
           code! Helper functions make the code clearer and cleaner. */
+void segment_hton(ctcp_segment_t *segment)
+{
+  segment->seqno = htonl(segment->seqno);
+  segment->ackno = htonl(segment->ackno);
+  segment->len = htons(segment->len);
+  segment->flags = htonl(segment->flags);
+  segment->window = htons(segment->window);
+  /* cksum is already in network byte order */
+}
 
+void segment_ntoh(ctcp_segment_t *segment)
+{
+  segment->seqno = ntohl(segment->seqno);
+  segment->ackno = ntohl(segment->ackno);
+  segment->len = ntohs(segment->len);
+  segment->flags = ntohl(segment->flags);
+  segment->window = ntohs(segment->window);
+}
 
+int16_t segment_send(ctcp_state_t *state,int32_t flags, int32_t len, char* data)
+{
+  ctcp_segment_t *segment = calloc(len,1);
+  segment->len = len;
+  segment->seqno = state->seqno + segment->len;
+  segment->ackno = state->ackno;
+  segment->flags |= ACK;
+  segment->window = MAX_SEG_DATA_SIZE;
+  segment->cksum = 0;
+  memcpy(segment->data,data,len - SEGMENT_HDR_SIZE);
+  int32_t sum = cksum(segment,len);
+  segment->cksum = sum;
+  conn_send(state->conn,segment,len);
+  return 1;
+}
 ctcp_state_t *ctcp_init(conn_t *conn, ctcp_config_t *cfg) {
   /* Connection could not be established. */
   if (conn == NULL) {
@@ -70,10 +109,9 @@ ctcp_state_t *ctcp_init(conn_t *conn, ctcp_config_t *cfg) {
   
   /* Set fields. */
   state->conn = conn;
-  state.seqno = 0;
-  state.ackno = 0;
-  /* FIXME: Do any other initialization here. */
-
+  /* hoangtu1: create a linked list of segment */
+  state->segments = ll_create();
+  state->cfg = cfg;
   return state;
 }
 
@@ -93,11 +131,25 @@ void ctcp_destroy(ctcp_state_t *state) {
 
 void ctcp_read(ctcp_state_t *state) {
   /* FIXME */
-  
+  uint32_t retval,len,flags = 0;
+  bzero(buffer,MAX_BUFF_SIZE);
+  retval = conn_input(state->conn, buffer, MAX_BUFF_SIZE);
+
+  if (-1 == retval) 
+  {
+    flags |= FIN;
+    segment_send(state, flags, SEGMENT_HDR_SIZE, NULL);
+  }
+  else
+  {
+    len = retval + SEGMENT_HDR_SIZE;
+    segment_send(state, flags, len, buffer);
+  }
 }
 
 void ctcp_receive(ctcp_state_t *state, ctcp_segment_t *segment, size_t len) {
   /* FIXME */
+  
 }
 
 void ctcp_output(ctcp_state_t *state) {

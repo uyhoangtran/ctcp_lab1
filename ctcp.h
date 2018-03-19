@@ -38,6 +38,12 @@
 #define ACK ntohl(TH_ACK)
 #define FIN ntohl(TH_FIN)
 
+/** Timer and time out
+*
+*
+*/
+#define TIMER_INT 1
+#define TIMEOUT 5
 
 /**
  * cTCP configuration struct.
