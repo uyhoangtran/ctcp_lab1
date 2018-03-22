@@ -418,7 +418,15 @@ def correct_header_fields():
   if not segment.has_same_flags(ref_segment):
     if "ACK" in segment.flags:
       segment.flags.remove("ACK")
-
+      #hoang_debug
+  print(segment.seqno == ref_segment.seqno)
+  print(segment.ackno == 0 or segment.ackno == ref_segment.ackno)
+  print(segment.length == ref_segment.length)
+  print(segment.has_same_flags(ref_segment))
+  print(segment.window == ref_segment.window)
+  print((segment.checksum == ref_segment.checksum or
+     int(segment.checksum, 16) == segment.c_repr.cksum))
+  #end_hoang_debug
   return (
     segment.seqno == ref_segment.seqno and
     (segment.ackno == 0 or segment.ackno == ref_segment.ackno) and
