@@ -191,7 +191,7 @@ void  retransmission_handler(ctcp_state_t *state)
   segment_attr->time += state->timer;
   if(segment_attr->time >= state->rt_timeout)
   {
-    conn_send(state->conn,segment_attr->segment,segment_attr->segment->len);
+    conn_send(state->conn,segment_attr->segment,ntohs(segment_attr->segment->len));
   }
   }
 }
