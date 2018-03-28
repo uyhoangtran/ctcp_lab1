@@ -152,7 +152,7 @@ static int16_t _segment_send(ctcp_state_t *state,int32_t flags, int32_t len, cha
   _print_segment_info(segment);
   fprintf(stderr,"\n");
   state->seqno += datalen;
-  if((segment->data != NULL)||(segment->flags&FIN))
+  if((datalen > 0)||(segment->flags&FIN))
   _save_sent_segment(state,segment);
   return len;
 }
@@ -179,9 +179,11 @@ static int16_t _is_segment_valid(ctcp_segment_t *segment,uint16_t len)
 
 static void _destroy_acked_segment(ctcp_state_t *state)
 {
-  free(state->sent_segment_attr->segment);
-  free(state->sent_segment_attr);
-  state->sent_segment_attr = NULL;
+  if(state->sent_segment_attr != NULL){
+    free(state->sent_segment_attr->segment);
+    free(state->sent_segment_attr);
+    state->sent_segment_attr = NULL;
+  }
 }
 
 void  retransmission_handler(ctcp_state_t *state)
@@ -219,6 +221,7 @@ ctcp_state_t *ctcp_init(conn_t *conn, ctcp_config_t *cfg) {
   state->rt_timeout = cfg->rt_timeout;
   state->conn_state = DATA_TRANSFER;
   /* hoangtu1: create a linked list of segment */
+ // state->sent_segment_attr = calloc(sizeof(ctcp_segment_attr_t),1);
   state->segments_send = ll_create();
   return state;
 }
@@ -323,13 +326,7 @@ void ctcp_receive(ctcp_state_t *state, ctcp_segment_t *segment, size_t len) {
     {
       if(segment->seqno != state->tear_down_nums->fin_ack_no) /* if not ACK of FIN */
       {
-        if(segment->len == SEGMENT_HDR_SIZE)
         {
-          state->ackno = segment->seqno;
-          _destroy_acked_segment(state);
-          free(segment);
-        }
-        else{
       /*Send data to STDOUT */
           state->received_segment = segment;
           ctcp_output(state);
@@ -369,6 +366,13 @@ void ctcp_output(ctcp_state_t *state) {
   }
   if(avail_buf >= datalen)
   {
+    if(datalen == 0)
+      {
+        state->ackno = state->received_segment->seqno;
+        _destroy_acked_segment(state);
+        free(state->received_segment);
+      }
+    else {
     if(conn_output(state->conn,state->received_segment->data,datalen) < 0)
     {
       fprintf(stderr,"Cannot output\n");
@@ -383,6 +387,7 @@ void ctcp_output(ctcp_state_t *state) {
     }
     _destroy_acked_segment(state);
     free(state->received_segment);
+    }
   }
 }
 
