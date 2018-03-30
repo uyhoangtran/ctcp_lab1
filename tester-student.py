@@ -555,11 +555,9 @@ def fin_sent():
   if not read_segments_from(client):
     return False
   time.sleep(1)
-
   # Write an EOF character.
   write_to(client, '\x1a')
   client.stdin.close()
-
   # Check to see that segment sent from client is a FIN.
   segments = read_segments_from(client)
   if not segments:
@@ -568,7 +566,8 @@ def fin_sent():
 
 
 def connection_teardown():
-  """
+  """  time.sleep(1)
+
   Makes sure connection teardown occurs when both sides send a FIN.
   """
   test_str = make_random(100)

@@ -1268,7 +1268,7 @@ void end_client() {
     fprintf(stderr, "[INFO] Client disconnected\n");
     return;
   }
-
+  fprintf(stderr, "Dis form sevr\n");
   delete_all_connections();
   close(config->socket);
   fprintf(stderr, "[INFO] Disconnected from server\n");
