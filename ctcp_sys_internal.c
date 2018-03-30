@@ -401,10 +401,6 @@ char *convert_to_datagram(conn_t *dst, ctcp_segment_t *segment, int len) {
   segment->cksum = 0;
   uint16_t correct_sum = cksum(segment, len);
   segment->cksum = sum;
-  //if(DEBUG)
-  {
-    fprintf(stderr,"student cksum %d, correct cksum %d",sum,correct_sum);
-  }
   /* TCP checksum. Add on the difference between the correct checksum and the
      student's checksum. */
   tcp_hdr->th_sum = cksum_tcp(ip_hdr, data_len);
@@ -1268,7 +1264,6 @@ void end_client() {
     fprintf(stderr, "[INFO] Client disconnected\n");
     return;
   }
-  fprintf(stderr, "Dis form sevr\n");
   delete_all_connections();
   close(config->socket);
   fprintf(stderr, "[INFO] Disconnected from server\n");
