@@ -401,6 +401,7 @@ void ctcp_destroy(ctcp_state_t *state) {
   ll_destroy(state->segments_send);
   free(state->tear_down_nums);
   free(state);
+  state = NULL;
   end_client();
 }
 
@@ -572,13 +573,10 @@ void ctcp_output(ctcp_state_t *state)
     {
       conn_output(state->conn,segment->data,datalen);
       state->ackno += datalen;
-      fprintf(stderr,"before send ACK \n");
       _segment_send(state,ACK,SEGMENT_HDR_SIZE,NULL);
       
-      fprintf(stderr,"befor free\n");
       free(segment);
           
-      fprintf(stderr,"after free \n");
       if (NULL == ll_node->next)
       {
         ll_remove(state->segments_receive,ll_node);
@@ -600,6 +598,8 @@ void ctcp_timer() {
   while(NULL != state)
   {
     retransmission_handler(state);
-    state = state_list->next;
+    if (NULL == state)
+      break;
+    state = state->next;
   }
 }
