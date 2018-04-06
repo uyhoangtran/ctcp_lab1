@@ -575,6 +575,7 @@ void ctcp_output(ctcp_state_t *state)
       state->ackno += datalen;
       _segment_send(state,ACK,SEGMENT_HDR_SIZE,NULL);
       
+      state->datasize_in -= datalen; 
       free(segment);
           
       if (NULL == ll_node->next)

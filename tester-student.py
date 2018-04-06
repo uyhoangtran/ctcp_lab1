@@ -418,15 +418,6 @@ def correct_header_fields():
   if not segment.has_same_flags(ref_segment):
     if "ACK" in segment.flags:
       segment.flags.remove("ACK")
-      #hoang_debug
-  print(segment.seqno == ref_segment.seqno)
-  print(segment.ackno == 0 or segment.ackno == ref_segment.ackno)
-  print(segment.length == ref_segment.length)
-  print(segment.has_same_flags(ref_segment))
-  print(segment.window == ref_segment.window)
-  print((segment.checksum == ref_segment.checksum or
-     int(segment.checksum, 16) == segment.c_repr.cksum))
-  #end_hoang_debug
   return (
     segment.seqno == ref_segment.seqno and
     (segment.ackno == 0 or segment.ackno == ref_segment.ackno) and
@@ -622,6 +613,8 @@ def larger_windows():
 
   # Get the last ackno from server.
   last_ackno = server_segments[-1].ackno
+  print("\n")
+  print(server_segments[-1].seqno)
 
   # Have the client send a lot of data. See if it sends up to the window size.
   for large_str in large_strs:
@@ -640,6 +633,11 @@ def larger_windows():
   passed = largest_seg.seqno <= last_ackno + 4 * MAX_SEG_DATA_SIZE and \
            largest_seg.seqno >= last_ackno + 3 * MAX_SEG_DATA_SIZE
   sliding_window_passed = passed
+  print("\n")
+  print(last_ackno)
+  print("\n")
+  print(largest_seg.seqno)
+  print("\n")
   return passed
 
 
