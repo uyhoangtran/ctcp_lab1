@@ -610,34 +610,43 @@ def larger_windows():
   server_segments = read_segments_from(server)
   if not server_segments:
     return False
-
+  
   # Get the last ackno from server.
   last_ackno = server_segments[-1].ackno
-  print("\n")
-  print(server_segments[-1].seqno)
-
+  print(len(large_strs))
   # Have the client send a lot of data. See if it sends up to the window size.
   for large_str in large_strs:
     write_to(client, large_str)
+    print(len(large_str))
   segments = read_segments_from(server)
   if not segments:
     return False
+
+  print(len(segments))
 
   # Look only at segments sent by client.
   segments = [s for s in segments if s.source_port == int(client_port)]
   if len(segments) == 0:
     return False
 
+  print("\n")
+  
+  print(len(segments))
+  
+  for segment in segments:
+    print(segment.seqno)
+  
+  print("\n")
   # Get the largest segment sent.
-  largest_seg = max(segments, key=lambda s: s.seqno)
-  passed = largest_seg.seqno <= last_ackno + 4 * MAX_SEG_DATA_SIZE and \
-           largest_seg.seqno >= last_ackno + 3 * MAX_SEG_DATA_SIZE
-  sliding_window_passed = passed
-  print("\n")
-  print(last_ackno)
-  print("\n")
-  print(largest_seg.seqno)
-  print("\n")
+  # largest_seg = max(segments, key=lambda s: s.seqno)
+  # passed = largest_seg.seqno <= last_ackno + 4 * MAX_SEG_DATA_SIZE and \
+  #          largest_seg.seqno >= last_ackno + 3 * MAX_SEG_DATA_SIZE
+  # sliding_window_passed = passed
+  # print("\n")
+  # print(last_ackno)
+  # print("\n")
+  # print(largest_seg.seqno)
+  # print("\n")
   return passed
 
 

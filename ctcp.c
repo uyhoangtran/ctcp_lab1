@@ -86,7 +86,6 @@ struct ctcp_state {
   td_state_t td_state;
   uint16_t datasize_in;
   uint16_t datasize_out;
-//  uint32_t exp_seqno;           /* Expected sequence number to receive */
   uint16_t tim;
   uint16_t timer;               /* How often ctcp_timer() is called, in ms */
   uint16_t rt_timeout;          /* Retransmission timeout, in ms */
@@ -207,20 +206,24 @@ static int16_t _segment_send(ctcp_state_t *state,int32_t flags, int32_t len, cha
   {
     return -1;
   }
+  /*
   fprintf(stderr,"Sent segment:\n");
   _print_segment_info(segment);
-  fprintf(stderr,"\n");
- if (flags&FIN){
+  fprintf(stderr,"\n"); 
+  */
+  if (flags&FIN)
+  {
     state->seqno ++;
     state->tear_down_nums = calloc(sizeof(ctcp_tear_down_nums_t),1);
     state->tear_down_nums->fin_seq_no = state->seqno;
     state->tear_down_nums->fin_ack_no = state->ackno;
   }
-  else{
-  state->seqno += datalen;
+  else
+  {
+    state->seqno += datalen;
   }
-  if((datalen > 0) || flags&FIN)
-  _save_sent_segment(state,segment);
+  if (datalen > 0)
+    _save_sent_segment(state,segment);
   return len;
 }
 
@@ -278,8 +281,12 @@ static int _destroy_acked_segment(ctcp_state_t *state, uint32_t ackno)
   int ret = 0;
   ll_node_t *ll_node;
   ctcp_segment_attr_t *sent_segment_attr;
-
+  
   ll_node = find_ll_node_with_ack(state->segments_send,ackno);
+  if (NULL == ll_node)
+  {
+    return ret;
+  }
   sent_segment_attr = (ctcp_segment_attr_t *)ll_node->object;
   free(sent_segment_attr->segment);
   sent_segment_attr->segment = NULL;
@@ -335,6 +342,7 @@ void  retransmission_handler(ctcp_state_t *state)
     {
       conn_send(state->conn,segment_attr->segment,ntohs(segment_attr->segment->len));
       segment_attr->no_of_times ++;
+      segment_attr->time = 0;
       if(segment_attr->no_of_times >= 5)
       {
         if(0 != _destroy_acked_segment(state,ntohl(segment_attr->segment->ackno)))
@@ -350,6 +358,10 @@ void  retransmission_handler(ctcp_state_t *state)
       {
         ll_node = ll_node->next;
       }
+    }
+    else
+    {
+      ll_node = ll_node->next;
     }
   }
 }
@@ -434,11 +446,11 @@ exit_read: return;
 }
 
 void ctcp_receive(ctcp_state_t *state, ctcp_segment_t *segment, size_t len) {
-  
+  /*
   fprintf(stderr,"Received segment:\n");
   _print_segment_info(segment);  
   fprintf(stderr,"\n");
-
+  */
   if(_is_segment_valid(segment,(uint16_t)len) != 0)
   {
     fprintf(stderr,"Received segment is invalid \n");
@@ -515,7 +527,7 @@ void ctcp_receive(ctcp_state_t *state, ctcp_segment_t *segment, size_t len) {
       state->ackno = segment->seqno + 1;
       if(_segment_send(state,ACK,SEGMENT_HDR_SIZE,NULL) < 0)
       {
-        perr("Cannot send last ACK segment");
+        perr("Cannot send last ACK segment TEARDOWN");
       }
         ctcp_destroy(state);
       break;
@@ -566,7 +578,7 @@ void ctcp_output(ctcp_state_t *state)
     avail_buff = conn_bufspace(state->conn);
     if (datalen > avail_buff)
     {
-      fprintf(stderr,"Not enough buffer available \n");
+      fprintf(stderr,"Not enough buffer available for output \n");
       break;
     }
     if (datalen <= avail_buff)
@@ -574,8 +586,8 @@ void ctcp_output(ctcp_state_t *state)
       conn_output(state->conn,segment->data,datalen);
       state->ackno += datalen;
       _segment_send(state,ACK,SEGMENT_HDR_SIZE,NULL);
-      
-      state->datasize_in -= datalen; 
+      _destroy_acked_segment(state,segment->seqno);
+      state->datasize_in -= datalen;
       free(segment);
           
       if (NULL == ll_node->next)
