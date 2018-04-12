@@ -280,6 +280,12 @@ static int _destroy_acked_segment(ctcp_state_t *state, uint32_t ackno)
   ctcp_segment_attr_t *sent_segment_attr;
 
   ll_node = find_ll_node_with_ack(state->segments_send,ackno);
+
+  if (ll_node == NULL)
+  {
+    return 0;
+  }
+
   sent_segment_attr = (ctcp_segment_attr_t *)ll_node->object;
   free(sent_segment_attr->segment);
   sent_segment_attr->segment = NULL;
@@ -335,6 +341,7 @@ void  retransmission_handler(ctcp_state_t *state)
     {
       conn_send(state->conn,segment_attr->segment,ntohs(segment_attr->segment->len));
       segment_attr->no_of_times ++;
+      segment_attr->time = 0;
       if(segment_attr->no_of_times >= 5)
       {
         if(0 != _destroy_acked_segment(state,ntohl(segment_attr->segment->ackno)))
@@ -350,6 +357,10 @@ void  retransmission_handler(ctcp_state_t *state)
       {
         ll_node = ll_node->next;
       }
+    }
+    else
+    {
+      ll_node = ll_node->next;
     }
   }
 }
@@ -574,7 +585,7 @@ void ctcp_output(ctcp_state_t *state)
       conn_output(state->conn,segment->data,datalen);
       state->ackno += datalen;
       _segment_send(state,ACK,SEGMENT_HDR_SIZE,NULL);
-      
+      _destroy_acked_segment(state,segment->seqno);
       state->datasize_in -= datalen; 
       free(segment);
           
