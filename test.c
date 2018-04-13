@@ -27,14 +27,14 @@
 int main() {
   /* Stores the message sent by the client. Hopefully it isn't longer than 1000
      characters, or it will be cut off. */
-  char buf[1000];
+  char buf[1500];
 
   /* Loop program forever so it can keep receiving input. */
   while (1) {
-    memset(buf, 0, 1000);
+    memset(buf, 0, 1500);
 
     /* Read input. */
-    int r = read(0, buf, 1000);
+    int r = read(0, buf, 1500);
     if (r > 0)
       fprintf(stderr, "Got: %s\n", buf);
   }
