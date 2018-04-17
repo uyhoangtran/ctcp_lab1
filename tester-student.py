@@ -418,6 +418,7 @@ def correct_header_fields():
   if not segment.has_same_flags(ref_segment):
     if "ACK" in segment.flags:
       segment.flags.remove("ACK")
+
   return (
     segment.seqno == ref_segment.seqno and
     (segment.ackno == 0 or segment.ackno == ref_segment.ackno) and
@@ -546,9 +547,11 @@ def fin_sent():
   if not read_segments_from(client):
     return False
   time.sleep(1)
+
   # Write an EOF character.
   write_to(client, '\x1a')
   client.stdin.close()
+
   # Check to see that segment sent from client is a FIN.
   segments = read_segments_from(client)
   if not segments:
@@ -557,8 +560,7 @@ def fin_sent():
 
 
 def connection_teardown():
-  """  time.sleep(1)
-
+  """
   Makes sure connection teardown occurs when both sides send a FIN.
   """
   test_str = make_random(100)
@@ -595,7 +597,7 @@ def larger_windows():
   global sliding_window_passed
 
   stop_str = DEBUG_STOP + "1t'5 h4mm3r t1m3!!!!!!!!\n"
-  large_strs = ["ZHT7pfdiY2t9ArJHS30MBiFEG2PJ4xEMlkJWnZrnWAvxt1atV4ZdyMt2aZNvMHc3OBGQn43YCba70TwUr6J6aoewqzsfpvMb1jm98sbNvosJiyUFmalxQhRt5CSGqEeUscPvXP2G3XKcyq2D4jMipCL7XtVhotsJRtF6UZG6PXLMtGb1snXM2vjSBRrPRSVSmy5G33TKkEeDkYRT4vgiq8y2aMSkWQ5S18D3hysyy9SSLgNdO8e8ZteKLAvE2EnTdlRUhZndsy6oIRvQnvwniizF4xKwoWunUavMn8lIxhvNtvrj5nrjL8h2XCxftyThGPwXcijivMdwnG9ok5t3SimC8YMg8GjpmXO4EjUmGxUNHWRFAFgrP97tqenfFQEw32qYvZO6aK5af7MHdvDsUe0Hfi9XFNmahyC5a8uvN63A4uB1LcxZJvixjOETZaHHkCTlRv9fzjb1CVMtvYHDr8l9cclqMTpgznGJSewGPyz11x434Mc35hvEey5VHqw9JV4egX0dpCH37yq2CnuZFCYcFE2hsNU5FpHHHkkLvBYsJAODW2DmBPWQnRUjqGBgesTgKNFDHsA8istfeVza" for _ in range(20)]
+  large_strs = [make_random(596) for _ in range(20)]
 
   client_port, server_port = choose_ports()
   server = start_server(port=server_port, reference=True, flags=["-w", str(4)])
@@ -610,14 +612,13 @@ def larger_windows():
   server_segments = read_segments_from(server)
   if not server_segments:
     return False
-  
+
   # Get the last ackno from server.
   last_ackno = server_segments[-1].ackno
-  print(len(large_strs))
+
   # Have the client send a lot of data. See if it sends up to the window size.
   for large_str in large_strs:
     write_to(client, large_str)
-
   segments = read_segments_from(server)
   if not segments:
     return False
@@ -627,18 +628,11 @@ def larger_windows():
   if len(segments) == 0:
     return False
 
-  print(segments)
-
   # Get the largest segment sent.
   largest_seg = max(segments, key=lambda s: s.seqno)
   passed = largest_seg.seqno <= last_ackno + 4 * MAX_SEG_DATA_SIZE and \
            largest_seg.seqno >= last_ackno + 3 * MAX_SEG_DATA_SIZE
   sliding_window_passed = passed
-  # print("\n")
-  # print(last_ackno)
-  # print("\n")
-  print(largest_seg.seqno)
-  # print("\n")
   return passed
 
 
