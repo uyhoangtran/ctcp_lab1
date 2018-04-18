@@ -418,15 +418,7 @@ def correct_header_fields():
   if not segment.has_same_flags(ref_segment):
     if "ACK" in segment.flags:
       segment.flags.remove("ACK")
-      #hoang_debug
-  print(segment.seqno == ref_segment.seqno)
-  print(segment.ackno == 0 or segment.ackno == ref_segment.ackno)
-  print(segment.length == ref_segment.length)
-  print(segment.has_same_flags(ref_segment))
-  print(segment.window == ref_segment.window)
-  print((segment.checksum == ref_segment.checksum or
-     int(segment.checksum, 16) == segment.c_repr.cksum))
-  #end_hoang_debug
+
   return (
     segment.seqno == ref_segment.seqno and
     (segment.ackno == 0 or segment.ackno == ref_segment.ackno) and
@@ -555,9 +547,11 @@ def fin_sent():
   if not read_segments_from(client):
     return False
   time.sleep(1)
+
   # Write an EOF character.
   write_to(client, '\x1a')
   client.stdin.close()
+
   # Check to see that segment sent from client is a FIN.
   segments = read_segments_from(client)
   if not segments:
@@ -566,8 +560,7 @@ def fin_sent():
 
 
 def connection_teardown():
-  """  time.sleep(1)
-
+  """
   Makes sure connection teardown occurs when both sides send a FIN.
   """
   test_str = make_random(100)
