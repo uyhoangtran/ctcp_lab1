@@ -343,15 +343,8 @@ void ctcp_receive(ctcp_state_t *state, ctcp_segment_t *segment, size_t len) {
     {
       if(segment->flags & ACK)
       {
-        if (segment->flags & FIN)
-        {
-          state->conn_state = WAIT_LAST_ACK;
-        }
-        else
-        {
-          if (segment->seqno == state->fin_ackno)
-            state->conn_state = WAIT_LAST_FIN;
-        }
+        if (segment->seqno == state->fin_ackno)
+          state->conn_state = WAIT_LAST_FIN;
         break;
       }
       else if (segment->flags & FIN)
